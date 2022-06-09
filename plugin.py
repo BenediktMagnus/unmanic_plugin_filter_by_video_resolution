@@ -6,7 +6,7 @@ import logging
 from unmanic.libs.unplugins.settings import PluginSettings
 
 # Configure plugin logger
-logger = logging.getLogger("Unmanic.Plugin.filter_by_video_resolution")
+logger = logging.getLogger('Unmanic.Plugin.filter_by_video_resolution')
 
 class Settings(PluginSettings):
     settings = {}
