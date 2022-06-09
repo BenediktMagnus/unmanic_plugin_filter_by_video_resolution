@@ -1,0 +1,18 @@
+{
+    "author": "",
+    "compatibility": [
+        2
+    ],
+    "description": "Set lower and upper bounds for the width and height of video files.",
+    "icon": "",
+    "id": "filter_by_video_resolution",
+    "name": "Limit library search by video resolution",
+    "platform": [
+        "linux"
+    ],
+    "priorities": {
+        "on_library_management_file_test": 0
+    },
+    "tags": "library file test,ffmpeg",
+    "version": "0.0.1"
+}
