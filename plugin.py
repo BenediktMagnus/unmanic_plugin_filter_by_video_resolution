@@ -12,12 +12,16 @@ logger = logging.getLogger('Unmanic.Plugin.filter_by_video_resolution')
 
 class Settings(PluginSettings):
     settings = {
+        'every_condition_must_be_true': True, # TODO: Change this to a select box.
         'min_width': 0,
         'min_height': 0,
         'max_width': 0,
         'max_height': 0,
     }
     form_settings = {
+        'every_condition_must_be_true': {
+            'label': 'If set, only files that respect all limits are processed, otherwise a single limit is enough.',
+        },
         'min_width': {
             'label': 'Minimum width (zero disables the minimum)',
         },
@@ -32,25 +36,38 @@ class Settings(PluginSettings):
         },
     }
 
-def resolution_is_within_limits(width: int, height: int) -> bool:
-    settings = Settings()
+def resolution_is_within_limits(settings: Settings, width: int, height: int) -> bool:
+    min_width = int(settings.get_setting('min_width')) # type: ignore
+    min_height = int(settings.get_setting('min_height')) # type: ignore
+    max_width = int(settings.get_setting('max_width')) # type: ignore
+    max_height = int(settings.get_setting('max_height')) # type: ignore
 
-    min_width: int = settings.get_setting('min_width') or 0 # type: ignore
-    min_height: int = settings.get_setting('min_height') or 0 # type: ignore
-    max_width: int = settings.get_setting('max_width') or 0 # type: ignore
-    max_height: int = settings.get_setting('max_height') or 0 # type: ignore
+    every_condition_must_be_true: bool|None = settings.get_setting('every_condition_must_be_true') # type: ignore
+    if every_condition_must_be_true is None:
+        every_condition_must_be_true = True
 
-    if 0 < width < min_width:
-        return False
-    if 0 < height < min_height:
-        return False
-    if width > max_width > 0:
-        return False
-    if height > max_height > 0:
-        return False
-
-    return True
-
+    if every_condition_must_be_true:
+        if min_width > 0 and width < min_width:
+            return False
+        if min_height > 0 and height < min_height:
+            return False
+        if max_width > 0 and width > max_width:
+            return False
+        if max_height > 0 and height > max_height:
+            return False
+        # If no condition is false, the resolution is within the limits:
+        return True
+    else:
+        if min_width > 0 and width >= min_width:
+            return True
+        if min_height > 0 and height >= min_height:
+            return True
+        if max_width > 0 and width <= max_width:
+            return True
+        if max_height > 0 and height <= max_height:
+            return True
+        # If no condition is true, the result is only false if there has been any condition:
+        return min_width == min_height == max_width == max_height == 0
 
 def on_library_management_file_test(data):
     """
@@ -69,6 +86,11 @@ def on_library_management_file_test(data):
 
     """
 
+    if data.get('library_id'):
+        settings = Settings(library_id=data.get('library_id'))
+    else:
+        settings = Settings()
+
     file_path = data.get('path')
 
     try:
@@ -80,7 +102,7 @@ def on_library_management_file_test(data):
         # Not a video file
         return
 
-    if not resolution_is_within_limits(width, height):
+    if not resolution_is_within_limits(settings, width, height):
         data['add_file_to_pending_tasks'] = False
         data['issues'].append(
             {
